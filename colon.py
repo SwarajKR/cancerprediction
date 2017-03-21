@@ -1,7 +1,6 @@
 import csv
 import math
 
-
 class Decision:
     "Loads The CSV and perform Rule Extraction...."
 
@@ -41,6 +40,7 @@ class Decision:
                     perfomance = self.findPerfomance(i, j)
                     self.addToArray(perfomance, i, j)
         print(self.bestPerfomance)
+        self.predict()
 
     def findPerfomance(self, i, j):
         # true/false positive/negative
@@ -62,15 +62,15 @@ class Decision:
                     fn += 1
         # Calculate Accuracy,precision,recall (float is used since 0 is
         # produced instead of 0.)
-        try :
+        try:
             accuracy = float(tp + tn) / self.length
         except ZeroDivisionError:
             return 0
-        try :
+        try:
             precision = float(tp) / (tp + fp)
         except ZeroDivisionError:
             return 0
-        try :
+        try:
             recall = float(tp) / (tp + fn)
         except ZeroDivisionError:
             return 0
@@ -96,17 +96,25 @@ class Decision:
         if len(self.bestPerfomance) < self.k:
             self.bestPerfomance.append([i, j, perfomance])
         else:
-            insert = [i,j,perfomance]
-            temp = []
+            insert = [i, j, perfomance]
             for i in range(self.k):
                 if self.bestPerfomance[i][-1] < insert[-1]:
-                    temp = self.bestPerfomance[i]
-                    self.bestPerfomance[i] = insert
-                    insert = temp
+                    insert, self.bestPerfomance[i] = self.bestPerfomance[i], insert
 
+    def predict(self):
+        for row in self.loadedList:
+            neg = 0
+            pos = 0
+            for x in range(self.k):
+                if row[self.bestPerfomance[x][0]] > row[self.bestPerfomance[x][1]]:
+                    pos += 1
+                else:
+                    neg += 1
+            print pos,neg,row[-1]
+            
 def main():
-    object = Decision()
-    object()
+    clf = Decision()
+    clf()
 
 if __name__ == "__main__":
     main()
