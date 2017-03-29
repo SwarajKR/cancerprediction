@@ -1,5 +1,6 @@
 import csv
 import math
+from decimal import *
 
 class Decision:
     "Loads The CSV and perform Rule Extraction...."
@@ -11,6 +12,8 @@ class Decision:
         # LOAD THE DATA
         self.loadedList = self.load()
         # No Of collections and number genes in each collection
+        self.testData = self.loadedList[0:15]
+        self.loadedList = self.loadedList[15:62]
         self.length = len(self.loadedList)
         self.genes = len(self.loadedList[0]) - 1
         # THE Negatives and positives are seperated and stored in a dict
@@ -25,9 +28,14 @@ class Decision:
 
     def load(self):
         # LOAD CSV AND RETUEN A LIST
-        line = csv.reader(open("colonTumor.data", "rb"))
+        line = csv.reader(open("colonTumor.data", "r"))
         datas = list(line)
-        return datas
+        #convert str to nums
+        temp = []
+        for i in range(len(datas)):
+            temp.append([Decimal(datas[i][j])for j in range(len(datas[0])-1)])
+            temp[i].append(datas[i][-1])
+        return temp
 
     def __call__(self):
         # Iterate Through 2000 genes as i and inside iterate through same
@@ -61,7 +69,7 @@ class Decision:
                 else:
                     fn += 1
         # Calculate Accuracy,precision,recall (float is used since 0 is
-        # produced instead of 0.)
+        # produced instead of 0.) for py 2.7
         try:
             accuracy = float(tp + tn) / self.length
         except ZeroDivisionError:
@@ -102,7 +110,8 @@ class Decision:
                     insert, self.bestPerfomance[i] = self.bestPerfomance[i], insert
 
     def predict(self):
-        for row in self.loadedList:
+        correct = 0
+        for row in self.testData:
             neg = 0
             pos = 0
             for x in range(self.k):
@@ -110,7 +119,11 @@ class Decision:
                     pos += 1
                 else:
                     neg += 1
-            print pos,neg,row[-1]
+            if pos > neg and row[-1] == 'positive':
+                correct +=1
+            elif row[-1] == 'negative':
+                correct += 1
+        print(float(correct)/15*100)
             
 def main():
     clf = Decision()
