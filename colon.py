@@ -16,15 +16,6 @@ class Decision:
         self.loadedList = self.loadedList[15:62]
         self.length = len(self.loadedList)
         self.genes = len(self.loadedList[0]) - 1
-        # THE Negatives and positives are seperated and stored in a dict
-        self.seperated = {}
-        self.seperated['positive'] = []
-        self.seperated['negative'] = []
-        for row in self.loadedList:
-            if row[-1] == "positive":
-                self.seperated['positive'].append(row[:-1])
-            else:
-                self.seperated['negative'].append(row[:-1])
 
     def load(self):
         # LOAD CSV AND RETUEN A LIST
@@ -41,6 +32,7 @@ class Decision:
         # Iterate Through 2000 genes as i and inside iterate through same
         # values as j
         for i in range(self.genes):
+            print("Gene : ",i)
             # if value of ithh gene > jth index gene its positive else negative
             # where i != j
             for j in range(self.genes):
