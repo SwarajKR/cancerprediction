@@ -12,8 +12,8 @@ class Decision:
         # LOAD THE DATA
         self.loadedList = self.load()
         # No Of collections and number genes in each collection
-        self.testData = self.loadedList[0:15]
-        self.loadedList = self.loadedList[15:62]
+        self.testData = self.loadedList[0:10]
+        self.loadedList = self.loadedList[10:62]
         self.length = len(self.loadedList)
         self.genes = len(self.loadedList[0]) - 1
 
@@ -103,19 +103,32 @@ class Decision:
 
     def predict(self):
         correct = 0
+        #THE STRING IS USED FOR WRITING TO FILE
+        result = str()
+        #for each testData
         for row in self.testData:
             neg = 0
             pos = 0
+            #ECHECK ALL DECISION RULE FOR POSITIVE OR NEGATOVE
             for x in range(self.k):
                 if row[self.bestPerfomance[x][0]] > row[self.bestPerfomance[x][1]]:
                     pos += 1
                 else:
                     neg += 1
-            if pos > neg and row[-1] == 'positive':
-                correct +=1
-            elif row[-1] == 'negative':
-                correct += 1
-        print(float(correct)/15*100)
+            #check TOTAL POSITIVE AND NEGATIVE DECISIONS TO DECIDE WHETHER THE RESULT
+            if pos > neg :
+                if row[-1] == 'positive':
+                    correct += 1
+                result += "positive, "+row[-1]+"\n"
+            else:
+                if row[-1] == 'negative':
+                    correct += 1
+                result += "negative, "+row[-1]+"\n"
+        print(result)
+        #wRITE TO FILE
+        with open("result.csv","w") as fpointer:
+            fpointer.write(result)
+        print(float(correct)/10*100)
             
 def main():
     clf = Decision()
