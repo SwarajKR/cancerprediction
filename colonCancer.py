@@ -1,13 +1,16 @@
 import csv
 import math
 from decimal import *
+from multiprocessing import Process, Lock,Queue
+
 
 class Decision:
     "Loads The CSV and perform Rule Extraction...."
 
     def __init__(self):
         # VARABLE DECLERATION
-        self.k = 7
+        self.k = 5
+        self.l = Lock()
         self.bestPerfomance = []
         # LOAD THE DATA
         self.loadedList = self.load()
@@ -31,16 +34,43 @@ class Decision:
     def __call__(self):
         # Iterate Through 2000 genes as i and inside iterate through same
         # values as j
+        q =Queue()
+        q.put([])
         for i in range(self.genes):
             print("Gene : ",i)
-            # if value of ithh gene > jth index gene its positive else negative
-            # where i != j
-            for j in range(self.genes):
-                if i != j :
-                    perfomance = self.findPerfomance(i, j)
-                    self.addToArray(perfomance, i, j)
-        print(self.bestPerfomance)
+            #STart Processing
+            pone = Process(target=self.ruleChecking, args=(i,[0,500],q))
+            ptwo = Process(target=self.ruleChecking, args=(i,[500,1000],q))
+            pthree = Process(target=self.ruleChecking, args=(i,[1000,1500],q))
+            pfour = Process(target=self.ruleChecking, args=(i,[1500,2000],q))
+            pone.start()
+            ptwo.start()
+            pthree.start()
+            pfour.start()
+            pone.join()
+            ptwo.join()
+            pthree.join()
+            pfour.join()
+        self.bestPerfomance = q.get()
         self.predict()
+
+    def ruleChecking(self,i,iterlist,q):
+         for j in range(iterlist[0],iterlist[1]):
+             # if value of ithh gene > jth index gene its positive else negative
+             # where i != j
+             if i != j :
+                perfomance = self.findPerfomance(i, j)
+                self.l.acquire()
+                bestPerfomance = q.get()
+                if len(bestPerfomance) < self.k:
+                    bestPerfomance.append([i, j, perfomance])
+                else:
+                    insert = [i, j, perfomance]
+                    for i in range(self.k):
+                        if bestPerfomance[i][-1] < insert[-1]:
+                            insert, bestPerfomance[i] = bestPerfomance[i], insert
+                q.put(bestPerfomance)
+                self.l.release()
 
     def findPerfomance(self, i, j):
         # true/false positive/negative
@@ -92,29 +122,13 @@ class Decision:
                      * fMeasure + (1.0 / 3) * gMean)
         return peromance
 
-    def addToArray(self, perfomance, i, j):
-        if len(self.bestPerfomance) < self.k:
-            self.bestPerfomance.append([i, j, perfomance])
-        else:
-            insert = [i, j, perfomance]
-            for i in range(self.k):
-                if self.bestPerfomance[i][-1] < insert[-1]:
-                    insert, self.bestPerfomance[i] = self.bestPerfomance[i], insert
-
     def predict(self):
         correct = 0
         #THE STRING IS USED FOR WRITING TO FILE
         result = str()
         #for each testData
         for row in self.testData:
-            neg = 0
-            pos = 0
-            #ECHECK ALL DECISION RULE FOR POSITIVE OR NEGATOVE
-            for x in range(self.k):
-                if row[self.bestPerfomance[x][0]] > row[self.bestPerfomance[x][1]]:
-                    pos += 1
-                else:
-                    neg += 1
+            pos,neg = self.calcs(row)
             #check TOTAL POSITIVE AND NEGATIVE DECISIONS TO DECIDE WHETHER THE RESULT
             if pos > neg :
                 if row[-1] == 'positive':
@@ -129,10 +143,41 @@ class Decision:
         with open("result.csv","w") as fpointer:
             fpointer.write(result)
         print(float(correct)/10*100)
+
+    def calcs(self,row):
+         neg = 0
+         pos = 0
+         #ECHECK ALL DECISION RULE FOR POSITIVE OR NEGATOVE
+         for x in range(self.k):
+            if row[self.bestPerfomance[x][0]] > row[self.bestPerfomance[x][1]]:
+                pos += 1
+            else:
+                neg += 1
+         return pos,neg
+
+    
+    def run(self,filename):
+        #predict for unlabeled data
+        line = csv.reader(open(filename, "r"))
+        datas = list(line)
+        #FOE EACH ROW IN INPUT FILE predict
+        for i in range(len(datas)):
+           data = [Decimal(datas[i][j])for j in range(len(datas[i]))]
+           pos,neg = self.calcs(data)
+           if pos > neg:
+                print(i,": positive")
+           else:
+                print(i,": negative")
             
 def main():
+    #TRain with part of datas
     clf = Decision()
+    #FIND THE Accuracy
     clf()
+    #predict for data that is in another csv file (unlabeled)
+    choice = int(input("1 For classifying data:"))
+    if choice == 1 :
+        clf.run("test.csv")
 
 if __name__ == "__main__":
     main()
